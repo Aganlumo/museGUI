@@ -7,3 +7,6 @@ token.pickle
 Include
 DriveAPI/__pycache__
 quickstart.py
+readMarkersStream.py
+pyvenv.cfg
+.pylintrc
