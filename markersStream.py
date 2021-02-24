@@ -7,7 +7,7 @@ import keyboard
 from pylsl import StreamInfo, StreamOutlet
 
 
-def main():
+def stream_markers():
     # first create a new stream info (here we set the name to MyMarkerStream,
     # the content-type to Markers, 1 channel, irregular sampling rate,
     # and string-valued data) The last value would be the locally unique
@@ -31,11 +31,11 @@ def main():
                 sample = 1
             else:
                 sample = 0
-            print(time.time())
+            # print(time.time())
             outlet.push_sample([sample], timestamp=time.time())
             time.sleep(0.004)
         except KeyboardInterrupt:
             break
 
 if __name__ == '__main__':
-    main()
+    stream_markers()

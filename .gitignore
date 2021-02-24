@@ -1,5 +1,5 @@
 __pycache__
-recordings
+recordings*
 Scripts
 Lib
 tocken.pickle
@@ -10,3 +10,7 @@ quickstart.py
 readMarkersStream.py
 pyvenv.cfg
 .pylintrc
+plotMuse.py
+sendDataAdvanced.py
+test_eeg.csv
+test_ppg.csv

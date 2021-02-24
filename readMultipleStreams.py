@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import pandas as pd
 
 from muselsl.constants import LSL_EEG_CHUNK, LSL_PPG_CHUNK
 from pylsl import StreamInlet, resolve_streams
@@ -42,36 +43,82 @@ def record_multiple(duration, filename=None):
         ch_names_ppg.append(ch_ppg.child_value('label'))
 
     res_eeg = []
-    timestamp_eeg = []
+    timestamps_eeg = []
     res_ppg = []
-    timestamp_ppg = []
+    timestamps_ppg = []
     markers = []
-    timestamp_markers = []
+    # ppgs = []
+    # timestamp_markers = []
     t_init = time.time()
+    last_timestamp = 0
     time_correction_eeg = inlet_eeg.time_correction()
     time_correction_ppg = inlet_ppg.time_correction()
 
-    while True:
+    print("Start recording")
+    while (last_timestamp - t_init) < (duration + 1.4):
+        # print(last_timestamp - t_init)
         try:
-            chunk_eeg, timestamp_eeg = inlet_eeg.pull_chunk(timeout=1.0)
-            chunk_ppg, timestamp_ppg = inlet_ppg.pull_chunk(timeout=1.0)
-            chunk_marker, timestamp_markers = inlet_markers.pull_sample(timeout=1.0)
-            if timestamp_markers and timestamp_eeg and timestamp_ppg:
-                timestamps1 = np.array(timestamp_eeg) - timestamp_markers
-                timestamps2 = np.array(timestamp_ppg) - timestamp_markers
-    #             print("""timestamp_markers {};
-    # sample {}//\n
-    # timestamp_eeg {};
-    # chunk_eeg {} //\n
-    # timestamp_ppg {};
-    # chunk_ppg\n\n""".format(timestamp_markers, sample, 
-    #                     timestamp_eeg, chunk_eeg, timestamp_ppg, chunk_ppg))
-                print("Difference betwwen EEG and markers {}".format(timestamps1))
-                print("Difference betwwen PPG and markers {}".format(timestamps2))
-                print('\n\n\n\nNEXT_CHUNK\n\n\n\n')
+            chunk_eeg, ts_eeg = inlet_eeg.pull_chunk(max_samples=LSL_EEG_CHUNK)
+            chunk_ppg, ts_ppg = inlet_ppg.pull_chunk(max_samples=LSL_PPG_CHUNK)
+            marker, timestamp_markers = inlet_markers.pull_sample()
+            # print("Seconds elapsed %.4f" % (time.time() - t_init))
+            # if timestamp_markers and ts_eeg and ts_ppg:
+            if ts_eeg:
+                # print('I am here')
+                res_eeg.append(chunk_eeg)
+                timestamps_eeg.extend(ts_eeg)
+            if ts_ppg:
+                res_ppg.append(chunk_ppg)
+                timestamps_ppg.extend(ts_ppg)
+            if timestamp_markers:
+                markers.append([marker, timestamp_markers])
+                last_timestamp = timestamp_markers
+                # print(last_timestamp)
+
         except KeyboardInterrupt:
             break
+    
+    time_correction_eeg = inlet_eeg.time_correction()
+    time_correction_ppg = inlet_ppg.time_correction()
+    print("Time corrections: EEG {}, PPG {}".format(time_correction_eeg, time_correction_ppg))
+
+    res_eeg = np.concatenate(res_eeg, axis=0)
+    res_ppg = np.concatenate(res_ppg, axis=0)
+    timestamps_ppg = np.array(timestamps_ppg) + time_correction_ppg
+    timestamps_eeg = np.array(timestamps_eeg) + time_correction_eeg
+    
+    ts_df_eeg = pd.DataFrame(
+        np.c_[timestamps_eeg - timestamps_eeg[0]], columns=['timestamps'])
+    ts_df_ppg = pd.DataFrame(
+        np.c_[timestamps_ppg - timestamps_ppg[0]], columns=['timestamps'])
+
+    res_eeg = np.c_[timestamps_eeg, res_eeg]
+    res_ppg = np.c_[timestamps_ppg, res_ppg]
+    data_eeg = pd.DataFrame(data=res_eeg, columns=[
+                            'timestamps'] + ch_names_eeg)
+    data_ppg = pd.DataFrame(data=res_ppg, columns=[
+                            'timestamps'] + ch_names_ppg)
+
+    n_markers = len(markers[0][0])
+    for ii in range(n_markers):
+        data_eeg['Marker%d' % ii] = "NaN"
+        data_ppg['Marker%d' % ii] = 'NaN'
+        # Process markers
+        for marker in markers:
+            ix_eeg = np.argmin(np.abs(marker[1] - timestamps_eeg))
+            ix_ppg = np.argmin(np.abs(marker[1] - timestamps_ppg))
+            for i in range(n_markers):
+                data_eeg.loc[ix_eeg, 'Marker%d' % i] = marker[0][i]
+                data_ppg.loc[ix_ppg, 'Marker%d' % i] = marker[0][i]
+
+    data_eeg.update(ts_df_eeg)
+    data_ppg.update(ts_df_ppg)
+    
+    data_ppg.to_csv('PPG_' + filename + '.csv', float_format='%.3f', index=False)
+    data_eeg.to_csv('EEG_' + filename + '.csv', float_format='%.3f', index=False)
+
+    print("Success! Both files written")
 
 
 if __name__ == "__main__":
-    record_multiple(5)
+    record_multiple(5, filename='test')

@@ -21,19 +21,24 @@ class Uploader:
                           self.API_NAME,  self.SCOPES)
         self.service = build(self.API_NAME, self.API_VERSION, credentials=self.auth.getCredentials())
 
-    def upload(self, path):
+    def upload(self, path, id):
         # print(path)
         self.files = " ".join([f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))])
         # print(self.files)
-        self.file_names = re.findall(r'[\w.-]+\.csv', self.files)
+        self.file_names = re.findall(r'((EEG_|PPG)([\w.-]+\.csv\b))', self.files)
         self.mime_type = 'text/csv'
     
         for file_name in self.file_names:
+            fn = file_name[0]
+            print(fn)
+            print(id in fn )
+            if id not in fn:
+                continue
             self.file_metadata = {
-                'name': file_name,
+                'name': fn,
                 'parents': self.folder_id
             }
-            self.media = MediaFileUpload(path + '\\{0}'.format(file_name), mimetype=self.mime_type)
+            self.media = MediaFileUpload(path + '\\{0}'.format(fn), mimetype=self.mime_type)
 
             self.service.files().create(
                 body=self.file_metadata,
@@ -41,6 +46,21 @@ class Uploader:
                 fields='id'
             ).execute()
 
+    def upload_one(self, path, file_name):
+        # self.file_name = filename
+        self.mimetype = 'text/csv'
+        self.file_metadata = {
+            'name': file_name,
+            'parents': self.folder_id
+        }
+        self.media = MediaFileUpload(
+            path + '\\{0}'.format(file_name), mimetype=self.mime_type)
+
+        self.service.files().create(
+            body=self.file_metadata,
+            media_body=self.media,
+            fields='id'
+        ).execute()
 
 if __name__ == "__main__":
     uploader = Uploader()

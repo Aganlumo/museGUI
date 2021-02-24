@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from time import sleep, localtime, strftime
 
 from DriveAPI.driveUploader import Uploader
+import markersStream
+import readMultipleStreams
 
 # from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QPushButton, QLabel, QApplication, QSpinBox, QMessageBox
@@ -41,8 +43,8 @@ class MainWindow(QWidget):
         self.spb_duration = QSpinBox()
         self.spb_duration.setRange(1, 300)
         self.spb_duration.setSingleStep(1)
-        self.spb_duration.setValue(180)
-        self.spb_duration.setSuffix(" seconds")
+        self.spb_duration.setValue(5)
+        # self.spb_duration.setSuffix(" seconds")
 
         # Create Plot Widgets
         self.lbl_tp9 = QLabel("TP9")
@@ -64,7 +66,8 @@ class MainWindow(QWidget):
 
         self.lyt_data.addRow(self.btn_stream)
         self.lyt_data.addRow(self.btn_record)
-        self.lyt_data.addRow("Record Time:", self.spb_duration)
+        self.lyt_data.addRow(self.btn_markers)
+        self.lyt_data.addRow("Record Time (s):", self.spb_duration)
 
         self.lyt_main.addWidget(self.lbl_title)
         self.lyt_main.addLayout(self.lyt_data)
@@ -88,8 +91,9 @@ class MainWindow(QWidget):
         if not os.path.exists(recordings_path):
             os.mkdir(recordings_path)
         os.chdir(recordings_path)
-        fn = '{0}_EEG_{1}.csv'.format(self._id, strftime('%Y-%m-%d-%H_%M_%S', localtime()))
-        muselsl.record(self.spb_duration.value(), filename=fn)
+        fn = '{0}_{1}'.format(self._id, strftime('%Y-%m-%d-%H_%M_%S', localtime()))
+        # muselsl.record(self.spb_duration.value(), filename=fn)
+        readMultipleStreams.record_multiple(self.spb_duration.value(), filename=fn)
         sleep(2)
         os.chdir('..')
         description = """You're about to upload the files to the Google Drive.
@@ -98,14 +102,17 @@ class MainWindow(QWidget):
         """
         res = QMessageBox.question(self, 'Upload Files?', description)
         if res == QMessageBox.Yes:
-            uploader = Uploader('1YFledAtQ0VAWLNKl2rNPdus_pVn_vkT9')
-            uploader.upload(recordings_path)
+            uploader = Uploader('1BpPY3tQSjbjz6LM9vD5BB1nBDfoZ42xG')
+            print(fn)
+            uploader.upload(recordings_path, fn)
             print('\n\n\n\nDONE! Files Uploaded to Drive')
         else:
-            os.remove(os.path.join(recordings_path, fn))
+            # os.remove(os.path.join(recordings_path, fn))
+            pass
 
     def evt_btn_markers_clicked(self):
-        pass
+        markersStream.stream_markers()
+        # pass
 
 
 
