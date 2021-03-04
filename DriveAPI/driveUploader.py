@@ -31,7 +31,7 @@ class Uploader:
         for file_name in self.file_names:
             fn = file_name[0]
             print(fn)
-            print(id in fn )
+            print(id in fn)
             if id not in fn:
                 continue
             self.file_metadata = {

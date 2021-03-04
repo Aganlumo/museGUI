@@ -1,8 +1,8 @@
 """Example program to demonstrate how to send string-valued markers into LSL."""
 
-import random
 import time
 import keyboard
+import mouse
 
 from pylsl import StreamInfo, StreamOutlet
 
@@ -23,15 +23,15 @@ def stream_markers():
     outlet = StreamOutlet(info)
 
     print("Started markers stream...")
-    # markernames = ['Test', 'Blah', 'Marker', 'XXX', 'Testtest', 'Test-1-2-3']
     while True:
         try:
             # pick a sample to send an wait for a bit
-            if keyboard.is_pressed('space'):
+            if keyboard.is_pressed('space') or mouse.is_pressed():
                 sample = 1
             else:
                 sample = 0
             # print(time.time())
+            # print(sample)
             outlet.push_sample([sample], timestamp=time.time())
             time.sleep(0.004)
         except KeyboardInterrupt:

@@ -74,6 +74,8 @@ def record_multiple(duration, filename=None):
                 markers.append([marker, timestamp_markers])
                 last_timestamp = timestamp_markers
                 # print(last_timestamp)
+            progress = (last_timestamp - t_init)/(duration+1.4)*100
+            print(progress)
 
         except KeyboardInterrupt:
             break
