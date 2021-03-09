@@ -12,7 +12,7 @@ from DriveAPI.authorizer import Authorizer
 
 class Uploader:
     def __init__(self, folder_id):
-        self.SCOPES = ['https://www.googleapis.com/auth/drive']
+        self.SCOPES = ['https://www.googleapis.com/auth/drive.file']
         self.API_NAME = 'drive'
         self.API_VERSION = 'v3'
         self.folder_id = [folder_id]
@@ -30,8 +30,6 @@ class Uploader:
     
         for file_name in self.file_names:
             fn = file_name[0]
-            print(fn)
-            print(id in fn)
             if id not in fn:
                 continue
             self.file_metadata = {

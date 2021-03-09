@@ -1,3 +1,4 @@
+import os
 import time
 import numpy as np
 import pandas as pd
@@ -115,11 +116,20 @@ def record_multiple(duration, filename=None):
 
     data_eeg.update(ts_df_eeg)
     data_ppg.update(ts_df_ppg)
+
+    recordings_path = os.path.join(os.getcwd(), 'recordings')
+    if not os.path.exists(recordings_path):
+        os.mkdir(recordings_path)
+    # Change to the directory
+    os.chdir(recordings_path)
+    print(recordings_path)
+        
     
     data_ppg.to_csv('PPG_' + filename + '.csv', float_format='%.3f', index=False)
     data_eeg.to_csv('EEG_' + filename + '.csv', float_format='%.3f', index=False)
 
     print("Success! Both files written")
+    os.chdir('..')
 
 
 if __name__ == "__main__":

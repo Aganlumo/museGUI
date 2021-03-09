@@ -6,7 +6,8 @@ tocken.pickle
 token.pickle
 Include
 DriveAPI/__pycache__
-quickstart.py
+DriveAPI/credentials.json
+DriveAPI/quickstart.py
 readMarkersStream.py
 pyvenv.cfg
 .pylintrc
@@ -17,3 +18,16 @@ test_ppg.csv
 .vs
 experimental.py
 embeddingInQt.py
+dist
+build
+main.spec
+settingsWindow.py
+main.py
+.spec
+utils.py
+values.txt
+*/*/BlueMuse_*
+*/*/DriveAPI
+*/*/icons
+*/*/*.exe
+*/*/*.zip
