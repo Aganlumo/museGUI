@@ -8,7 +8,7 @@ from pylsl import StreamInlet, resolve_byprop
 from muselsl.constants import LSL_SCAN_TIMEOUT, LSL_EEG_CHUNK, LSL_PPG_CHUNK
 
 import markersStream
-import readMultipleStreams
+from readMultipleStreams import Recorder
 import plotMuse
 from DriveAPI.driveUploader import Uploader
 import labelstxts
@@ -21,8 +21,12 @@ from PyQt5.QtCore import QThread
 class MainWindow(QMainWindow):
     title = "Muse GUI"
     _id = 'test_subject'
-    markers_flag = False
     lang = 0
+    recording_time = 300
+    lslv_eeg = None
+    recording = False
+    markers_flag = False
+    r = Recorder()
     def __init__(self):
         super().__init__()
         self.setWindowTitle(self.title)
@@ -33,7 +37,7 @@ class MainWindow(QMainWindow):
         # Create Widgets
         # Create labels
         self.lbl_title = QLabel(self.title)
-        ss = "color:black; font-size:20; text-align:center"
+        ss = "color:black; font-size:20px; text-align:center; font-family:'Poppins'"
         self.lbl_title.setStyleSheet(ss)
 
         self.lbl_status_value = QLabel(labelstxts.texts["waiting"][self.lang])
@@ -55,25 +59,30 @@ class MainWindow(QMainWindow):
         self.btn_markers.clicked.connect(self.evt_btn_markers_clicked)
         self.btn_markers.setEnabled(self.markers_flag)
 
-        # Create spinbox for user input time
-        self.spb_duration = QSpinBox()
-        self.spb_duration.setRange(1, 300)
-        self.spb_duration.setSingleStep(1)
-        self.spb_duration.setValue(5)
+        # Plot from muselsl
+        # Use Qt5 background
+        matplotlib.use('Qt5Agg')
+        figsize = np.int16("5x3".split('x'))
+        # Gets the figures
+        self.fig1, self.axes_eeg = matplotlib.pyplot.subplots(
+            1, 2, figsize=figsize, sharex=True)
+
+        self.canvas_eeg = matplotlib.backends.backend_qt5agg.FigureCanvas(
+            self.fig1)
 
         self.setup_layout()
 
         if not os.path.exists(os.path.join(os.getcwd(), 'values.txt')):
             self.evt_set_folder(first=True)
 
+
     # Set all the layouts
     def setup_layout(self):
         # Create Empty Layouts
+        self.lyt_plot = QHBoxLayout()
         self.lyt_main = QVBoxLayout()
         self.lyt_presentation = QHBoxLayout()
-        self.lyt_data = QFormLayout()
         self.lyt_status = QHBoxLayout()
-        self.lyt_functionality = QGridLayout()
 
         # Add widgets and stretches to all layouts
         self.lyt_presentation.addStretch()
@@ -84,27 +93,26 @@ class MainWindow(QMainWindow):
         self.lbl_record_time = QLabel(
             labelstxts.texts["RecordTime"][self.lang] + " (s)")
 
-        self.lyt_data.addRow(self.lbl_record_time, self.spb_duration)
-        self.lyt_functionality.addWidget(self.btn_stream,0,0)
-        self.lyt_functionality.addWidget(self.btn_markers,0,1)
-        self.lyt_functionality.addWidget(self.btn_record,1,0)
-        self.lyt_functionality.addLayout(self.lyt_data,1,1)
-
         self.lbl_status = QLabel(labelstxts.texts["status"][self.lang])
         self.lyt_status.addStretch()
         self.lyt_status.addWidget(self.lbl_status)
         self.lyt_status.addWidget(self.lbl_status_value)
         self.lyt_status.addStretch()
+
         
         # Add layouts to main layout
+        self.lyt_main.addStretch()
         self.lyt_main.addLayout(self.lyt_presentation)
-        self.lyt_main.addLayout(self.lyt_functionality)
+        self.lyt_main.addWidget(self.btn_stream)
+        self.lyt_main.addWidget(self.btn_record)
         self.lyt_main.addLayout(self.lyt_status)
         self.lyt_main.addStretch()
 
+        self.lyt_plot.addLayout(self.lyt_main)
+        self.lyt_plot.addWidget(self.canvas_eeg)
         # Add main layout to central widget as super class is MainWindow
         central = QWidget()
-        central.setLayout(self.lyt_main)
+        central.setLayout(self.lyt_plot)
         self.setCentralWidget(central)
 
         # Create and set menus
@@ -117,10 +125,6 @@ class MainWindow(QMainWindow):
         es_settings.triggered.connect(self.set_spanish)
         self.settings_menu.addAction(en_settings)
         self.settings_menu.addAction(es_settings)
-        self.folder_menu = self.menu.addMenu("Folder")
-        set_folder = QAction("Select Folder", self)
-        set_folder.triggered.connect(self.evt_set_folder)
-        self.folder_menu.addAction(set_folder)
 
 
     ##############
@@ -171,27 +175,40 @@ class MainWindow(QMainWindow):
         if len(eeg_streams) == 0 or len(ppg_streams) == 0:
             self.btn_markers.setEnabled(False)
             QMessageBox.critical(self, "Insufficient streams", "Make sure BlueMuse has 4 streams available.")
-        else:
+            self.lslv_eeg = None
+            self.lslv_ppg = None
+        elif self.lslv_eeg is None:
             print("Start acquiring data.")
-            self.btn_markers.setEnabled(True)
+            self.lslv_eeg = plotMuse.LSLViewer(
+                eeg_streams[0], self.fig1, self.axes_eeg, 5, 150)
+            self.fig1.canvas.mpl_connect('close_event', self.lslv_eeg.stop)
+            self.eeg_thread = EEGThread()
+            self.eeg_thread.start()
+            self.evt_btn_markers_clicked()
 
     def evt_btn_record_clicked(self):
         # Get the path of the recordings 
         self.recordings_path = os.path.join(os.getcwd(), 'recordings')
-        self.btn_markers.setEnabled(False)
-        self.btn_record.setEnabled(False)
-        # Sets filename to (EEG|PPG)_recording_{current_datetime}
         self.fn = '{0}_{1}'.format(self._id, strftime('%Y-%m-%d-%H_%M_%S', localtime()))
         # Starts recording thread
-        self.recordings = RecordingThread()
-        self.recordings.start()
-        self.lbl_status_value.setText(labelstxts.texts['recording'][self.lang])
-        self.recordings.finished.connect(self.evt_recording_finished)
+        if not self.r.recording and not self.r.processing:
+            self.r.recording = True
+            self.recordings = RecordingThread()
+            self.recordings.start()
+            self.lbl_status_value.setText(labelstxts.texts['recording'][self.lang])
+            self.recordings.finished.connect(self.evt_recording_finished)
+            self.btn_record.setText("Stop Recording")
+            QMessageBox.information(self, "Message", "Recording Started.\nMaximum length is 10 minutes.\nYou can stop it before by pressing the button.")
+        else:
+            self.r.recording = False
+            self.lbl_status_value.setText("Processing Files")
+            QMessageBox.information(self, "Message", "Recording Finished by user.\nProcessing files may take a while.")
         
     def evt_recording_finished(self):
-        self.btn_markers.setEnabled(True)
-        self.btn_record.setEnabled(True)
+        self.lbl_status_value.setStyleSheet("color:black")
         self.lbl_status_value.setText(labelstxts.texts["finished"][self.lang])
+        self.btn_record.setText(labelstxts.texts["Record"][self.lang])
+        self.btn_record.setEnabled(True)
         # Ask user to upload the data
         with open('values.txt', 'r+') as f:
             self.folder_id = f.read()
@@ -219,6 +236,9 @@ class MainWindow(QMainWindow):
         self.markers_flag = not self.markers_flag
         self.btn_record.setEnabled(self.markers_flag)
 
+    def show_errors(self, error):
+        QMessageBox.critical(self, "Error", "Muse Disconnected.\nFinishing Recording")
+
 
 # Threads for executions
 class MarkerThread(QThread):
@@ -227,8 +247,13 @@ class MarkerThread(QThread):
 
 class RecordingThread(QThread):
     def run(self):
-        readMultipleStreams.record_multiple(w.spb_duration.value(), filename=w.fn)
+        w.r.record_multiple(filename=w.fn)
         
+class EEGThread(QThread):
+    def run(self):
+        w.lslv_eeg.started = True
+        w.lslv_eeg.update_plot()
+
 
 if __name__ == "__main__":
     subprocess.call('start bluemuse:', shell=True)

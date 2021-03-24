@@ -60,7 +60,7 @@ class MainWindow(QMainWindow):
 
         # Create spinbox for user input time
         self.spb_duration = QSpinBox()
-        self.spb_duration.setRange(1, 300)
+        self.spb_duration.setRange(1, 3000)
         self.spb_duration.setSingleStep(1)
         self.spb_duration.setValue(5)
 
