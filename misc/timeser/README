@@ -1,0 +1,29 @@
+for more information, see:
+  http://chaos.ph.utexas.edu/~weeks/research/tseries1.html
+email: weeks@chaos.ph.utexas.edu
+
+The time series:
+
+lorenz.dat:
+   16384 points
+   sampled every 0.01 time steps
+
+rossler.dat: 
+   8192 points
+   sampled every 0.1 time steps
+
+henon.dat:
+   16384 iterations
+
+exptper.dat:
+   16384 points, sampled every 0.1 s
+
+exptqp2.dat:
+   16384 points, sampled every 0.1 s
+
+exptqp3.dat:
+   16384 points, sampled every 0.4 s
+
+exptchao.dat:
+   16384 points, sampled every 0.1 s
+

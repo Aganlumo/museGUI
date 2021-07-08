@@ -35,3 +35,12 @@ BlueMuse_*
 wizard.py
 lorenz.py
 ami*
+*.pdf
+tesisManu/data
+misc/F
+misc/N
+misc/O
+misc/S
+misc/Z
+slprj
+*.zip
