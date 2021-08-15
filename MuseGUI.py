@@ -10,10 +10,9 @@ from muselsl.constants import LSL_SCAN_TIMEOUT, LSL_EEG_CHUNK, LSL_PPG_CHUNK
 
 import markersStream
 import readMultipleStreams
-import plotMuse
+from plotMuse import LSLViewer
 from DriveAPI.driveUploader import Uploader
 import labelstxts
-from settingsWindow import SettingsWindow
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QFont, QPixmap, QIcon
@@ -198,9 +197,9 @@ class MainWindow(QMainWindow):
             self.lslv_ppg = None
         elif self.lslv_eeg is None:
             print("Start acquiring data.")
-            self.lslv_eeg = plotMuse.LSLViewer(
+            self.lslv_eeg = LSLViewer(
                 eeg_streams[0], self.fig1, self.axes_eeg, 5, 150)
-            self.lslv_ppg = plotMuse.LSLViewer(
+            self.lslv_ppg = LSLViewer(
                 ppg_streams[0], self.fig2, self.axes_ppg, 5, 150,
                 chunk=LSL_PPG_CHUNK)
             self.fig1.canvas.mpl_connect('close_event', self.lslv_eeg.stop)
