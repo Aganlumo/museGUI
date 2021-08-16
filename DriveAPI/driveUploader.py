@@ -25,7 +25,7 @@ class Uploader:
         # print(path)
         self.files = " ".join([f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))])
         # print(self.files)
-        self.file_names = re.findall(r'((EEG_|PPG)([\w.-]+\.csv\b))', self.files)
+        self.file_names = re.findall(r'((EEG_|PPG_)([\w.-]+\.csv\b))', self.files)
         self.mime_type = 'text/csv'
     
         for file_name in self.file_names:

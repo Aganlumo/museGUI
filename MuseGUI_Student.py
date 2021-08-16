@@ -188,10 +188,11 @@ class MainWindow(QMainWindow):
     def evt_btn_record_clicked(self):
         # Get the path of the recordings 
         self.recordings_path = os.path.join(os.getcwd(), 'recordings')
-        self.fn = '{0}_{1}'.format(self._id, strftime('%Y-%m-%d-%H_%M_%S', localtime()))
         # Starts recording thread
         if not self.r.recording and not self.r.processing:
             self.r.recording = True
+            self.fn = '{0}_{1}'.format(self._id, strftime(
+                '%Y-%m-%d-%H_%M_%S', localtime()))
             self.recordings = RecordingThread()
             self.recordings.start()
             self.lbl_status_value.setText(labelstxts.texts['recording'][self.lang])
@@ -214,7 +215,7 @@ class MainWindow(QMainWindow):
         res = QMessageBox.question(self, 'Upload Files?', labelstxts.texts["UploadConfirmation"][self.lang])
         # Upload data if user says it is ok
         if res == QMessageBox.Yes:
-            uploader = Uploader(self.folder_id)
+            uploader = Uploader(self.folder_id.strip())
             uploader.upload(self.recordings_path, self.fn)
 
         # Delete data if user says it is not ok
