@@ -1,8 +1,11 @@
 clc; clear; close all;
 
-data_dir = dir('D:/ITESM/EEG/museGUI/tesisManu/data/raw');
+data_dir = dir(uigetdir(pwd));
 
 results_dir = './results/lyapunovs/';
+if ~exist(results, 'dir')
+    mkdir(results_dir)
+end
 
 for i=1:length(data_dir)
     if strcmp(data_dir(i).name, "..")
@@ -12,7 +15,7 @@ for i=1:length(data_dir)
         continue
     end
     disp(data_dir(i).name)
-    data = readtable(strcat(data_dir(i).folder, '\', data_dir(i).name));
+    data = readtable(strcat(data_dir(i).folder, '/', data_dir(i).name));
     idxs = find(data.('Marcadores') == 1);
     end_chunk = find(strcmp(string(data.Properties.VariableNames(:)), 'AF4'));
     % Find where to start the chunk for the different clusters
@@ -30,8 +33,8 @@ for i=1:length(data_dir)
             SSresid = sum(ldiv.^2);
             SStotal = (length(ldiv)-1) * var(ldiv);
             rsq = 1 - SSresid/SStotal;
-            name = string(strcat('Erange[0,400]_', data_dir(i).name, chunk.Properties.VariableNames(k)));
-            save_name = string(strcat('Erange_0_400_', string(i),'_', chunk.Properties.VariableNames(k)));
+            name = string(strcat('Erange[0,400]_', data_dir(i).name, 'cluster_', string(j),'_', chunk.Properties.VariableNames(k)));
+            save_name = string(strcat('Erange_0_400_', string(i),'_','cluster_', string(j),'_', chunk.Properties.VariableNames(k)));
             f = figure('Name', name, 'NumberTitle', 'off');
             f.Position = [200,200,933,700];
             hold on
