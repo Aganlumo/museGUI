@@ -3,7 +3,7 @@ clc; clear; close all;
 data_dir = dir(uigetdir(pwd));
 
 results_dir = './results/lyapunovs/';
-if ~exist(results, 'dir')
+if ~exist(results_dir, 'dir')
     mkdir(results_dir)
 end
 
@@ -25,7 +25,7 @@ for i=1:length(data_dir)
         chunk = data(idxs(j):idxs(j+1)-1, 2:end_chunk);
         for k=1:width(chunk)
             % [PIM, optau, FNN, dim, dg, lle, h, S] = chaotic_description(chunk.(k), 128);
-            [x, optau, dim] = phaseSpaceReconstruction(chunk.(k), 'MaxLag', 20, 'MaxDim', 10, 'PercentFalseNeighbors', 0.01);
+            [x, optau, dim] = phaseSpaceReconstruction(chunk.(k), 'MaxLag', 20, 'MaxDim', 100, 'PercentFalseNeighbors', 0.01);
             [lle, estep, ldiv] = lyapunovExponent(chunk.(k),128, optau,dim, 'ExpansionRange', 400);
             p = polyfit(estep, ldiv, 1);
             y_fit = polyval(p, estep);
@@ -34,7 +34,7 @@ for i=1:length(data_dir)
             SStotal = (length(ldiv)-1) * var(ldiv);
             rsq = 1 - SSresid/SStotal;
             name = string(strcat('Erange[0,400]_', data_dir(i).name, 'cluster_', string(j),'_', chunk.Properties.VariableNames(k)));
-            save_name = string(strcat('Erange_0_400_', string(i),'_','cluster_', string(j),'_', chunk.Properties.VariableNames(k)));
+            save_name = string(strcat('Erange_0_400_student', string(i),'_','cluster_', string(j),'_', chunk.Properties.VariableNames(k)));
             f = figure('Name', name, 'NumberTitle', 'off');
             f.Position = [200,200,933,700];
             hold on
